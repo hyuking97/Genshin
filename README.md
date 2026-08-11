@@ -20,6 +20,7 @@
 | `sheet.csv` | 원본 스프레드시트 데이터 (CSV) |
 | `parse.py` | CSV → 구조화 JSON (`data.json`) |
 | `fetch_images.py` | 캐릭터 아이콘·원소·영문명·페이몬 아이콘 수집 (`images.json`, `paimon.json`) |
+| `fetch_weapons.py` | 무기 아이콘·희귀도 수집 (`weapons.json`) |
 | `build_site.py` | 위 데이터로 `index.html` 생성 |
 
 ## 다시 빌드하기
@@ -27,11 +28,13 @@
 ```bash
 pip install Pillow
 python parse.py          # sheet.csv -> data.json
-python fetch_images.py   # 아이콘/원소/영문명 -> images.json, paimon.json
-python build_site.py     # -> genshin-build.html (index.html 로 복사)
+python fetch_images.py   # 캐릭터 아이콘/원소/영문명 -> images.json, paimon.json
+python fetch_weapons.py  # 무기 아이콘 -> weapons.json
+python build_site.py     # -> genshin-build.html
+cp genshin-build.html index.html
 ```
 
-> `parse.py`, `fetch_images.py`는 네트워크가 필요합니다(아이콘·영문명 API).
+> `fetch_images.py`, `fetch_weapons.py`는 네트워크가 필요합니다(아이콘·API).
 
 ## 출처 / 참고
 
