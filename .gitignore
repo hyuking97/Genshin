@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# generated intermediates (재생성 가능)
+icons/
+amber.json
+amber_en.json
+data.json
+images.json
+paimon.json
+genshin-build.html
+
+# debug / scratch
+*.txt
+test_icon.png
