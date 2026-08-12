@@ -185,7 +185,7 @@
       <button type="button" class="mtab active" data-mode="char">🧝 캐릭터</button>
       <button type="button" class="mtab" data-mode="weapon">⚔️ 무기</button>
     </div>
-    <div class="search-wrap"><input id="search" type="text" placeholder="검색 (이름·초성 ㅁㅂㅋ·영타 akqlzk)" autocomplete="off"></div>
+    <div class="search-wrap"><input id="search" type="text" placeholder="검색 (이름:마비카, ㅁㅂㅋ, akqlzk 등)" autocomplete="off"></div>
     <div class="elfilter" id="elfilter"></div>
     <div class="count" id="count"></div>
     <ul class="charlist" id="charlist"></ul>
@@ -376,7 +376,7 @@ function switchMode(m){
   mode=m;
   [...document.querySelectorAll(".mtab")].forEach(t=>t.classList.toggle("active", t.dataset.mode===m));
   searchEl.value="";
-  searchEl.placeholder = m==="char" ? "검색 (이름·초성 ㅁㅂㅋ·영타 akqlzk)" : "무기 검색 (이름·초성·영타)";
+  searchEl.placeholder = m==="char" ? "검색 (이름:마비카, ㅁㅂㅋ, akqlzk 등)" : "무기 검색 (이름, ㅁㅂㅋ, akqlzk 등)";
   buildList();
 }
 document.querySelectorAll(".mtab").forEach(t=> t.addEventListener("click", ()=> switchMode(t.dataset.mode)));
