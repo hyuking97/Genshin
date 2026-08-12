@@ -23,7 +23,20 @@
 | `fetch_weapons.py` | 무기 아이콘·희귀도 수집 (`weapons.json`) |
 | `build_site.py` | 위 데이터로 `index.html` 생성 |
 
-## 다시 빌드하기
+## 업데이트 방법 (자동 배포)
+
+**`sheet.csv` 만 바꾸면 자동으로 빌드·배포됩니다.** (GitHub Actions)
+
+1. 새 버전 표를 CSV로 export
+2. GitHub 웹에서 `sheet.csv` 열기 → ✏️ Edit → 내용 교체 → **Commit**
+   (또는 로컬에서 파일 교체 후 `git push`)
+3. Actions가 자동으로 `parse → fetch(아이콘·원소·영문·무기) → build → Pages 배포` 실행 → 1~3분 뒤 사이트 갱신
+
+> 🔒 이 저장소에 push할 수 있는 사람은 **오너 본인뿐**이며, 워크플로도 `hyuking97`의 변경일 때만 배포합니다. 외부인은 fork/PR만 가능하고 직접 배포되지 않습니다.
+
+수동 실행: 저장소 **Actions 탭 → Build & Deploy → Run workflow**.
+
+## 로컬에서 직접 빌드 (선택)
 
 ```bash
 pip install Pillow
@@ -31,10 +44,9 @@ python parse.py          # sheet.csv -> data.json
 python fetch_images.py   # 캐릭터 아이콘/원소/영문명 -> images.json, paimon.json
 python fetch_weapons.py  # 무기 아이콘 -> weapons.json
 python build_site.py     # -> genshin-build.html
-cp genshin-build.html index.html
 ```
 
-> `fetch_images.py`, `fetch_weapons.py`는 네트워크가 필요합니다(아이콘·API).
+> `fetch_*` 스크립트는 네트워크가 필요합니다(아이콘·API). `amber*.json`은 없으면 자동으로 내려받습니다.
 
 ## 출처 / 참고
 

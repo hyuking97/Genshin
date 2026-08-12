@@ -3,6 +3,7 @@ import json
 
 data = json.load(open("data.json", encoding="utf-8"))
 imgs = json.load(open("images.json", encoding="utf-8"))
+weap = json.load(open("weapons.json", encoding="utf-8"))
 paimon = json.load(open("paimon.json", encoding="utf-8")).get("uri", "")
 for c in data:
     m = imgs.get(c["name"], {})
@@ -11,8 +12,13 @@ for c in data:
     c["en"] = m.get("en", "")
 
 DATA_JSON = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+WIMG_JSON = json.dumps(weap, ensure_ascii=False, separators=(",", ":"))
 
 HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
+<link rel="icon" type="image/webp" href="__PAIMON__">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#14131a">
 <style>
   :root {
     --bg:#f3efe4; --card:#fffdf7; --card2:#f7f2e6;
@@ -49,64 +55,73 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
   .topbar{
     position:sticky; top:0; z-index:30;
     background:linear-gradient(100deg, color-mix(in srgb,var(--gold) 16%,var(--bg)), var(--bg) 70%);
-    border-bottom:1px solid var(--line); padding:12px 18px;
-    display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); padding:11px 16px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   }
   .paimon{ width:30px; height:30px; border-radius:50%; flex:0 0 auto; box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 45%,transparent);}
-  .brand{font-size:17px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .brand{font-size:16.5px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .brand .mk{color:var(--gold);}
   .ver{font-size:12px; font-weight:700; color:var(--ink-faint); letter-spacing:0;
     background:var(--card); border:1px solid var(--line); padding:2px 9px; border-radius:999px;}
+  .viewtoggle{ margin-left:auto; display:flex; gap:3px; background:var(--card); border:1px solid var(--line); border-radius:999px; padding:3px;}
+  .vt{ font-family:inherit; cursor:pointer; border:0; background:none; border-radius:999px; padding:5px 11px; font-size:15px; line-height:1; color:var(--ink-faint);}
+  .vt.active{ background:var(--gold); color:#fff;}
+  .vt:focus-visible{ outline:2px solid var(--gold); outline-offset:1px;}
 
-  .layout{ max-width:1120px; margin:0 auto; padding:16px 18px 40px;
-    display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start; }
+  /* ===== mobile-first layout ===== */
+  .layout{ max-width:560px; margin:0 auto; padding:12px 14px 34px; }
+  .backbtn{ display:inline-flex; align-items:center; gap:6px; font-family:inherit; cursor:pointer;
+    font-size:13.5px; font-weight:800; color:var(--gold); background:var(--card); border:1px solid var(--line);
+    border-radius:999px; padding:8px 15px; margin-bottom:14px; }
+  .backbtn:hover{ border-color:var(--gold);}
+  .backbtn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px;}
 
-  /* picker */
-  .picker{ position:sticky; top:60px; }
   .modetabs{ display:flex; gap:6px; margin-bottom:10px; }
-  .mtab{ flex:1; font-family:inherit; cursor:pointer; font-size:13.5px; font-weight:800; color:var(--ink-soft);
-    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 10px; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .mtab{ flex:1; font-family:inherit; cursor:pointer; font-size:14px; font-weight:800; color:var(--ink-soft);
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 10px; display:flex; align-items:center; justify-content:center; gap:6px;}
   .mtab.active{ color:#fff; background:var(--gold); border-color:var(--gold);}
   .mtab:focus-visible{ outline:2px solid var(--gold); outline-offset:1px;}
   .search-wrap{ position:relative; }
   #search{
-    width:100%; font-family:inherit; font-size:14px; color:var(--ink);
+    width:100%; font-family:inherit; font-size:15px; color:var(--ink);
     background:var(--card); border:1px solid var(--line); border-radius:10px;
-    padding:10px 12px 10px 34px; outline:none;
+    padding:11px 12px 11px 36px; outline:none;
   }
   #search:focus{ border-color:var(--gold); box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent);}
-  .search-wrap::before{ content:"🔍"; position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:13px; opacity:.6;}
-  .elfilter{ display:flex; flex-wrap:wrap; gap:5px; margin:9px 0 4px;}
-  .elbtn{ font-family:inherit; cursor:pointer; font-size:12px; font-weight:700; color:var(--ink-soft);
-    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:4px 10px; display:inline-flex; align-items:center; gap:5px;}
+  .search-wrap::before{ content:"🔍"; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; opacity:.6;}
+  .elfilter{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px;}
+  .elbtn{ font-family:inherit; cursor:pointer; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:5px 11px; display:inline-flex; align-items:center; gap:5px;}
   .elbtn .dot{ width:9px; height:9px; border-radius:50%;}
-  .elbtn.active{ color:#fff; border-color:transparent;}
+  .elbtn.active{ font-weight:800; color:var(--gold); border-color:var(--gold); background:color-mix(in srgb,var(--gold) 14%,transparent);}
   .elbtn:focus-visible{ outline:2px solid var(--gold); outline-offset:1px;}
-  .count{ font-size:12px; color:var(--ink-faint); margin:6px 2px 6px;}
-  .charlist{ list-style:none; margin:0; padding:4px; overflow-y:auto; max-height:calc(100vh - 230px);
-    border:1px solid var(--line-soft); border-radius:12px; background:var(--card);}
+  .count{ font-size:12px; color:var(--ink-faint); margin:7px 2px 6px;}
+  .charlist{ list-style:none; margin:0; padding:4px; border:1px solid var(--line-soft); border-radius:12px; background:var(--card);}
   .charlist::-webkit-scrollbar{width:9px;}
   .charlist::-webkit-scrollbar-thumb{background:var(--line); border-radius:9px; border:2px solid var(--card);}
-  .citem{ display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  .citem{ display:flex; align-items:center; gap:11px; width:100%; text-align:left;
     font-family:inherit; cursor:pointer; background:none; border:0; color:inherit;
-    padding:7px 9px; border-radius:9px;}
+    padding:9px 10px; border-radius:9px;}
   .citem:hover{ background:var(--card2);}
   .citem.active{ background:color-mix(in srgb,var(--gold) 18%,transparent); }
   .citem.active .cn{ color:var(--gold); }
   .citem:focus-visible{ outline:2px solid var(--gold); outline-offset:1px;}
-  .avatar{ width:36px; height:36px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
-    font-size:15px; font-weight:800; color:#fff; object-fit:cover; border:2px solid transparent; background:var(--card2);}
+  .avatar{ width:40px; height:40px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+    font-size:16px; font-weight:800; color:#fff; object-fit:cover; border:2px solid transparent; background:var(--card2);}
+  .wsq{ border-radius:10px; }
   .wpnav{ background:color-mix(in srgb,var(--gold) 20%,var(--card2)); color:var(--gold);}
   .cmeta{ min-width:0; }
-  .cn{ font-size:14px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .ct{ font-size:11px; color:var(--ink-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cn{ font-size:15px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ct{ font-size:11.5px; color:var(--ink-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
-  /* detail */
-  .detail{ min-width:0; }
-  .empty{ color:var(--ink-faint); text-align:center; padding:80px 20px; font-size:15px;}
-  .dhead{ display:flex; align-items:center; gap:15px; margin-bottom:4px; flex-wrap:wrap;}
-  .dhead .avatar{ width:66px; height:66px; font-size:26px; border-width:3px;}
-  .dname{ font-size:26px; font-weight:800; letter-spacing:-.02em;}
+  /* detail (hidden on mobile until a pick) */
+  .detail{ min-width:0; display:none; }
+  body.show-detail .picker{ display:none; }
+  body.show-detail .detail{ display:block; }
+  .empty{ color:var(--ink-faint); text-align:center; padding:70px 20px; font-size:15px;}
+  .dhead{ display:flex; align-items:center; gap:14px; margin-bottom:4px; flex-wrap:wrap;}
+  .dhead .avatar{ width:60px; height:60px; font-size:24px; border-width:3px;}
+  .dname{ font-size:23px; font-weight:800; letter-spacing:-.02em;}
   .den{ font-size:12.5px; font-weight:700; color:var(--ink-faint); margin-top:1px;}
   .chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; align-items:center;}
   .chip{ font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:999px;
@@ -127,7 +142,7 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
   .ab{ font-weight:800; }
   .ab.A{ color:var(--a);} .ab.B{ color:var(--b);}
 
-  .stat3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .stat3{ display:grid; grid-template-columns:1fr; gap:10px;}
   .statc{ background:var(--card); border:1px solid var(--line-soft); border-radius:12px; padding:11px 13px; box-shadow:var(--shadow);}
   .statc .k{ font-size:11px; font-weight:800; color:var(--ink-faint); margin-bottom:5px; display:flex; align-items:center; gap:5px;}
   .statc .val{ font-size:13.5px; font-weight:600; line-height:1.5;}
@@ -135,7 +150,8 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
 
   .wpn{ background:var(--card); border:1px solid var(--line-soft); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow);}
   .wpn + .wpn{ margin-top:9px;}
-  .wpn .wn{ font-size:14.5px; font-weight:800; color:var(--gold); margin-bottom:7px;}
+  .wpn .wn{ font-size:14.5px; font-weight:800; color:var(--gold); margin-bottom:7px; display:flex; align-items:center; gap:8px;}
+  .wicon{ width:26px; height:26px; border-radius:6px; object-fit:cover; background:var(--card2); flex:0 0 auto;}
   .opt{ display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; font-size:13px; padding:5px 0;}
   .opt + .opt{ border-top:1px dashed var(--line);}
   .ocrit{ font-weight:800; font-variant-numeric:tabular-nums; background:color-mix(in srgb,var(--gold) 16%,transparent);
@@ -144,8 +160,7 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
   .oer{ color:var(--ink-faint); font-size:12px;}
   .oer b{ color:var(--ink-soft); font-weight:700;}
 
-  /* weapon-detail user cards */
-  .users{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:9px;}
+  .users{ display:grid; grid-template-columns:1fr; gap:9px;}
   .usercard{ display:flex; align-items:flex-start; gap:10px; text-align:left; width:100%;
     font-family:inherit; cursor:pointer; color:inherit;
     background:var(--card); border:1px solid var(--line-soft); border-radius:12px; padding:10px 12px; box-shadow:var(--shadow);}
@@ -157,18 +172,16 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
   .uopt{ font-size:12px; color:var(--ink-soft); padding:2px 0;}
   .uopt .ocrit{ font-size:11.5px; padding:1px 6px; }
 
-  footer{ max-width:1120px; margin:0 auto; padding:8px 18px 40px; color:var(--ink-faint); font-size:12px; line-height:1.6;}
-
-  /* mobile */
-  @media (max-width:820px){
-    .layout{ grid-template-columns:1fr; gap:14px; padding:12px 14px 32px;}
-    .picker{ position:static;}
-    .charlist{ max-height:44vh;}
-    .dname{ font-size:22px;}
-    .dhead .avatar{ width:58px; height:58px; font-size:22px;}
-    .stat3{ grid-template-columns:1fr; }
-    .users{ grid-template-columns:1fr; }
-  }
+  /* ===== desktop layout (toggled by JS: body.d) ===== */
+  body.d .layout{ max-width:1120px; padding:16px 18px 40px; display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start; }
+  body.d .picker{ position:sticky; top:60px; }
+  body.d .picker, body.d .detail{ display:block !important; }
+  body.d .charlist{ max-height:calc(100vh - 230px); overflow-y:auto; }
+  body.d .backbtn{ display:none; }
+  body.d .stat3{ grid-template-columns:repeat(3,1fr); }
+  body.d .users{ grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
+  body.d .dname{ font-size:26px; }
+  body.d .dhead .avatar{ width:66px; height:66px; font-size:26px; }
   html{ scroll-behavior:smooth;}
   @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} }
 </style>
@@ -176,6 +189,10 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
 <div class="topbar">
   <img class="paimon" src="__PAIMON__" alt="Paimon">
   <div class="brand"><span class="mk">원신</span> 캐릭터 빌드 뷰어 <span class="ver">ver 6.7</span></div>
+  <div class="viewtoggle" id="viewtoggle">
+    <button type="button" class="vt" data-view="mobile" title="모바일 보기" aria-label="모바일 보기">📱</button>
+    <button type="button" class="vt" data-view="web" title="웹 보기" aria-label="웹 보기">💻</button>
+  </div>
 </div>
 
 <div class="layout">
@@ -184,23 +201,20 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
       <button type="button" class="mtab active" data-mode="char">🧝 캐릭터</button>
       <button type="button" class="mtab" data-mode="weapon">⚔️ 무기</button>
     </div>
-    <div class="search-wrap"><input id="search" type="text" placeholder="검색 (이름·초성 ㅁㅂㅋ·영어)" autocomplete="off"></div>
+    <div class="search-wrap"><input id="search" type="text" placeholder="검색 (이름:마비카, ㅁㅂㅋ, akqlzk 등)" autocomplete="off"></div>
     <div class="elfilter" id="elfilter"></div>
     <div class="count" id="count"></div>
     <ul class="charlist" id="charlist"></ul>
   </aside>
   <main class="detail" id="detail">
-    <div class="empty">왼쪽에서 캐릭터를 선택하세요 👈<br>(모바일은 위쪽 목록)</div>
+    <div class="empty">캐릭터를 선택하세요 👈</div>
   </main>
 </div>
 
-<footer>
-  · 데이터 출처: <b>원신 올인원 준종결표 ver. LUNA VIII (6.7)</b> — 제작자의 주관적 의견이 포함되어 있어 참고용으로만 봐주세요.<br>
-  · 캐릭터 아이콘 · 원소 · 영문명 출처: Project Amber (ambr.top). 스프레드시트를 자동 변환한 페이지라 일부 표기가 원본과 다를 수 있어요.
-</footer>
-
 <script>
 const DATA = __DATA__;
+const WIMG = __WIMG__;
+const RANK = {5:"#e0a63f", 4:"#a97fd0", 3:"#5f8fb0"};
 
 const EL = {
   Fire:{c:"#e0663f",k:"불"}, Water:{c:"#3f9fe0",k:"물"}, Ice:{c:"#4fb6cf",k:"얼음"},
@@ -210,7 +224,6 @@ const PAL = ["#c2712c","#2f8f6f","#3f6fb0","#9a5bb8","#c04b6a","#b1852f","#4a8fb
 const CHO = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 function cho(s){ let r=""; for(const ch of s){ const x=ch.charCodeAt(0);
   r += (x>=0xAC00&&x<=0xD7A3) ? CHO[Math.floor((x-0xAC00)/588)] : ch; } return r; }
-// 두벌식 영타: 한글 -> 영문 키 시퀀스 (예: 마비카 -> akqlzk)
 const CHO_E=["r","R","s","e","E","f","a","q","Q","t","T","d","w","W","c","z","x","v","g"];
 const JUNG_E=["k","o","i","O","j","p","u","P","h","hk","ho","hl","y","n","nj","np","nl","b","m","ml","l"];
 const JONG_E=["","r","R","rt","s","sw","sg","e","f","fr","fa","fq","ft","fx","fv","fg","a","q","qt","t","T","d","w","c","z","x","v","g"];
@@ -232,15 +245,20 @@ function avatarHTML(c, cls){
   if(c.img) return '<img class="avatar'+(cls?' '+cls:'')+'" style="border-color:'+r+'" src="'+c.img+'" alt="'+esc(c.name)+'" loading="lazy">';
   return '<span class="avatar'+(cls?' '+cls:'')+'" style="background:'+hues(c.name)+';border-color:'+r+'">'+esc(initial(c.name))+'</span>';
 }
-// search keys
+function weaponAvatar(w, big){
+  const col = RANK[w.rank] || "var(--line)";
+  const st = big ? 'width:60px;height:60px;border-color:'+col : 'border-color:'+col;
+  if(w.img) return '<img class="avatar wsq" style="'+st+'" src="'+w.img+'" alt="" loading="lazy">';
+  return '<span class="avatar wsq wpnav" style="'+st+(big?';font-size:26px':'')+'">⚔</span>';
+}
 DATA.forEach(c=>{ c._k = [c.name, cho(c.name), engKeys(c.name), (c.en||"").toLowerCase(), (c.tags||[]).join(" ")].join(" "); });
 
 // weapon index (group by base name)
 function baseName(n){ let i=n.length; const p=n.indexOf("("); const s=n.indexOf("*");
   if(p>=0)i=Math.min(i,p); if(s>=0)i=Math.min(i,s); return n.slice(0,i).trim()||n; }
 const WMAP={};
-DATA.forEach(c=>{ (c.weapons||[]).forEach(w=>{ const b=baseName(w.name);
-  if(!WMAP[b]) WMAP[b]={name:b, _k:(b+" "+cho(b)+" "+engKeys(b)), users:[]};
+DATA.forEach(c=>{ (c.weapons||[]).forEach(w=>{ const b=baseName(w.name); const m=WIMG[b]||{};
+  if(!WMAP[b]) WMAP[b]={name:b, _k:(b+" "+cho(b)+" "+engKeys(b)), img:m.img||"", rank:m.rank||0, users:[]};
   WMAP[b].users.push({name:c.name, opts:w.opts, full:w.name}); }); });
 const WEAPONS = Object.values(WMAP).sort((a,b)=> b.users.length-a.users.length || a.name.localeCompare(b.name,"ko"));
 
@@ -258,7 +276,11 @@ function statCard(k, icon, arr){
   const val = (arr&&arr.length) ? arr.map(x=>'<div class="row">'+fmt(x)+'</div>').join("") : '<div class="row" style="color:var(--ink-faint)">-</div>';
   return '<div class="statc"><div class="k">'+icon+' '+k+'</div><div class="val">'+val+'</div></div>';
 }
-function weaponCard(w){ return '<div class="wpn"><div class="wn">'+esc(w.name)+'</div>'+optsHTML(w.opts)+'</div>'; }
+function weaponCard(w){
+  const m = WIMG[baseName(w.name)] || {};
+  const ic = m.img ? '<img class="wicon" src="'+m.img+'" alt="" loading="lazy">' : '';
+  return '<div class="wpn"><div class="wn">'+ic+esc(w.name)+'</div>'+optsHTML(w.opts)+'</div>';
+}
 
 function renderCharDetail(c){
   const chips = (c.tags||[]).map(t=>'<span class="chip">'+esc(t)+'</span>').join("");
@@ -287,12 +309,18 @@ function renderWeaponDetail(w){
     return '<button class="usercard" data-name="'+esc(u.name)+'">'+avatarHTML(c)
       + '<div style="min-width:0"><div class="un">'+esc(u.name)+' '+el+'</div>'+sub+optsHTML(u.opts,true)+'</div></button>';
   }).join("");
-  let h = '<div class="dhead"><span class="avatar wpnav" style="width:66px;height:66px;font-size:28px">⚔️</span>'
+  let h = '<div class="dhead">'+weaponAvatar(w,true)
     + '<div><div class="dname">'+esc(w.name)+'</div><div class="chips"><span class="chip">'+w.users.length+'명 사용</span></div></div></div>'
     + '<div class="sec"><h3>이 무기를 쓰는 캐릭터</h3><div class="users">'+users+'</div></div>';
   showDetail(h);
 }
-function showDetail(html){ const d=document.getElementById("detail"); d.innerHTML=html; d.scrollIntoView({block:"start"}); }
+function showDetail(html){
+  const d=document.getElementById("detail");
+  d.innerHTML = '<button class="backbtn" type="button" data-back>← 목록으로</button>'+html;
+  document.body.classList.add("show-detail");
+  window.scrollTo(0,0);
+}
+function goBack(){ document.body.classList.remove("show-detail"); window.scrollTo(0,0); }
 
 const listEl = document.getElementById("charlist");
 const countEl = document.getElementById("count");
@@ -302,7 +330,6 @@ let mode = "char";
 let activeName = null, activeWeapon = null;
 let elFilter = "";
 
-// element filter buttons
 const elsPresent = [];
 DATA.forEach(c=>{ if(c.el && !elsPresent.includes(c.el)) elsPresent.push(c.el); });
 const order = ["Fire","Water","Ice","Electric","Wind","Rock","Grass"];
@@ -312,8 +339,9 @@ elfEl.innerHTML = '<button class="elbtn active" data-el="">전체</button>'
 elfEl.addEventListener("click", e=>{
   const b=e.target.closest(".elbtn"); if(!b) return;
   elFilter=b.dataset.el;
-  [...elfEl.children].forEach(x=>{ x.classList.remove("active"); x.style.background=""; });
-  b.classList.add("active"); if(elFilter) b.style.background=EL[elFilter].c;
+  [...elfEl.children].forEach(x=>{ x.classList.remove("active"); x.style.color=""; x.style.borderColor=""; x.style.background=""; });
+  b.classList.add("active");
+  if(elFilter){ const col=EL[elFilter].c; b.style.color=col; b.style.borderColor=col; b.style.background="color-mix(in srgb,"+col+" 15%,transparent)"; }
   buildList();
 });
 
@@ -329,7 +357,7 @@ function buildList(){
     listEl.innerHTML = items.map(c=>{
       const active = c.name===activeName ? " active":"";
       return '<li><button class="citem'+active+'" data-name="'+esc(c.name)+'">'+avatarHTML(c)
-        + '<span class="cmeta"><span class="cn">'+esc(c.name)+'</span>'+'</span></button></li>';
+        + '<span class="cmeta"><span class="cn">'+esc(c.name)+'</span></span></button></li>';
     }).join("");
   } else {
     elfEl.style.display="none";
@@ -338,7 +366,7 @@ function buildList(){
     listEl.innerHTML = items.map(w=>{
       const active = w.name===activeWeapon ? " active":"";
       return '<li><button class="citem'+active+'" data-weapon="'+esc(w.name)+'">'
-        + '<span class="avatar wpnav">⚔</span>'
+        + weaponAvatar(w,false)
         + '<span class="cmeta"><span class="cn">'+esc(w.name)+'</span>'
         + '<span class="ct">'+w.users.length+'명 사용</span></span></button></li>';
     }).join("");
@@ -351,12 +379,12 @@ listEl.addEventListener("click", e=>{
   else if(btn.dataset.weapon){ activeWeapon=btn.dataset.weapon; const w=WEAPONS.find(x=>x.name===activeWeapon); if(w) renderWeaponDetail(w); }
   buildList();
 });
-// jump from weapon-detail user card -> character
 document.getElementById("detail").addEventListener("click", e=>{
+  if(e.target.closest("[data-back]")){ goBack(); return; }
   const u = e.target.closest(".usercard"); if(!u) return;
   switchMode("char"); activeName=u.dataset.name;
   const c=DATA.find(x=>x.name===activeName); if(c) renderCharDetail(c);
-  searchEl.value=""; buildList();
+  buildList();
 });
 searchEl.addEventListener("input", buildList);
 
@@ -364,15 +392,33 @@ function switchMode(m){
   mode=m;
   [...document.querySelectorAll(".mtab")].forEach(t=>t.classList.toggle("active", t.dataset.mode===m));
   searchEl.value="";
-  searchEl.placeholder = m==="char" ? "검색 (이름·초성 ㅁㅂㅋ·영어)" : "무기 검색 (이름·초성)";
+  searchEl.placeholder = m==="char" ? "검색 (이름:마비카, ㅁㅂㅋ, akqlzk 등)" : "무기 검색 (이름, ㅁㅂㅋ, akqlzk 등)";
   buildList();
 }
 document.querySelectorAll(".mtab").forEach(t=> t.addEventListener("click", ()=> switchMode(t.dataset.mode)));
+
+// ===== web / mobile view toggle =====
+const mql = window.matchMedia("(min-width:821px)");
+let viewPref = "auto";
+try{ viewPref = localStorage.getItem("viewPref") || "auto"; }catch(e){}
+function applyView(){
+  const desktop = viewPref==="web" || (viewPref==="auto" && mql.matches);
+  document.body.classList.toggle("d", desktop);
+  document.querySelectorAll(".vt").forEach(b=>
+    b.classList.toggle("active", b.dataset.view==="web" ? desktop : !desktop));
+}
+if(mql.addEventListener) mql.addEventListener("change", ()=>{ if(viewPref==="auto") applyView(); });
+document.querySelectorAll(".vt").forEach(b=> b.addEventListener("click", ()=>{
+  viewPref = b.dataset.view;
+  try{ localStorage.setItem("viewPref", viewPref); }catch(e){}
+  applyView();
+}));
+applyView();
 
 buildList();
 </script>
 """
 
-out = HTML.replace("__DATA__", DATA_JSON).replace("__PAIMON__", paimon)
+out = HTML.replace("__DATA__", DATA_JSON).replace("__WIMG__", WIMG_JSON).replace("__PAIMON__", paimon)
 open("genshin-build.html", "w", encoding="utf-8").write(out)
 print("written genshin-build.html, bytes:", len(out.encode("utf-8")))

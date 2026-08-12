@@ -2,14 +2,19 @@
 __pycache__/
 *.pyc
 
-# generated intermediates (재생성 가능)
+# generated / built (CI가 생성 — 재생성 가능)
+index.html
+genshin-build.html
+_site/
 icons/
+wicons/
 amber.json
 amber_en.json
+amber_weapon.json
 data.json
 images.json
+weapons.json
 paimon.json
-genshin-build.html
 
 # debug / scratch
 *.txt

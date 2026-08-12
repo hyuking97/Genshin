@@ -1,0 +1,55 @@
+name: Build & Deploy
+
+# sheet.csv 나 스크립트가 바뀌면 자동으로 빌드·배포합니다.
+# 수동 실행도 가능(Actions 탭 → Run workflow).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sheet.csv"
+      - "*.py"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+# 오너(hyuking97)의 변경일 때만 배포 — 외부 포크/PR로는 배포 안 됨
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    if: github.repository_owner == 'hyuking97' && github.actor == 'hyuking97'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install Pillow
+
+      - name: Build site (parse → fetch → build)
+        run: |
+          python parse.py
+          python fetch_images.py
+          python fetch_weapons.py
+          python build_site.py
+          mkdir -p _site
+          cp genshin-build.html _site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

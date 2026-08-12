@@ -8,6 +8,8 @@ UA = {"User-Agent": "Mozilla/5.0"}
 def get(url):
     return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read()
 
+if not os.path.exists("amber.json"):
+    open("amber.json", "wb").write(get("https://gi.yatta.moe/api/v2/kr/avatar"))
 amber = json.load(open("amber.json", encoding="utf-8"))["data"]["items"]
 byname = {v["name"]: v for v in amber.values()}
 byname_n = {k.replace(" ", ""): v for k, v in byname.items()}
