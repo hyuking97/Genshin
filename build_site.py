@@ -1,5 +1,21 @@
 # -*- coding: utf-8 -*-
-import json
+import json, csv, re
+
+def sheet_version():
+    """sheet.csv 첫 줄의 '[원신 올인원 준종결표] ver.X' 에서 버전 추출."""
+    try:
+        with open("sheet.csv", encoding="utf-8") as f:
+            for r in csv.reader(f):
+                for cell in r:
+                    m = re.search(r"ver\.?\s*(.+?)\s*$", cell.strip())
+                    if m and "준종결표" in cell:
+                        return "ver " + m.group(1)
+                break
+    except OSError:
+        pass
+    return ""
+
+VERSION = sheet_version()
 
 data = json.load(open("data.json", encoding="utf-8"))
 imgs = json.load(open("images.json", encoding="utf-8"))
@@ -188,7 +204,7 @@ HTML = r"""<title>원신 캐릭터 빌드 뷰어</title>
 
 <div class="topbar">
   <img class="paimon" src="__PAIMON__" alt="Paimon">
-  <div class="brand"><span class="mk">원신</span> 캐릭터 빌드 뷰어 <span class="ver">ver 6.7</span></div>
+  <div class="brand"><span class="mk">원신</span> 캐릭터 빌드 뷰어 <span class="ver">__VERSION__</span></div>
   <div class="viewtoggle" id="viewtoggle">
     <button type="button" class="vt" data-view="mobile" title="모바일 보기" aria-label="모바일 보기">📱</button>
     <button type="button" class="vt" data-view="web" title="웹 보기" aria-label="웹 보기">💻</button>
@@ -419,6 +435,7 @@ buildList();
 </script>
 """
 
-out = HTML.replace("__DATA__", DATA_JSON).replace("__WIMG__", WIMG_JSON).replace("__PAIMON__", paimon)
+out = (HTML.replace("__DATA__", DATA_JSON).replace("__WIMG__", WIMG_JSON)
+           .replace("__PAIMON__", paimon).replace("__VERSION__", VERSION))
 open("genshin-build.html", "w", encoding="utf-8").write(out)
 print("written genshin-build.html, bytes:", len(out.encode("utf-8")))

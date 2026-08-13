@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import json, os, base64, io, urllib.request
+import json, os, base64, io, urllib.request, difflib
 from PIL import Image
 
 UA = {"User-Agent": "Mozilla/5.0"}
@@ -40,10 +40,23 @@ def to_webp(png, size=96, q=84):
     buf = io.BytesIO(); im.save(buf, format="WEBP", quality=q, method=6)
     return buf.getvalue()
 
+def lookup(b):
+    v = byname.get(b) or byname_n.get(b.replace(" ", ""))
+    if v:
+        return v, None
+    # 원본 표의 오탈자 대응: 공백 무시 후 유사도 폴백
+    cand = difflib.get_close_matches(b.replace(" ", ""), list(byname_n), n=1, cutoff=0.8)
+    if cand:
+        return byname_n[cand[0]], cand[0]
+    return None, None
+
 out = {}
 miss = []
+fuzzy = []
 for b in bases:
-    v = byname.get(b) or byname_n.get(b.replace(" ", ""))
+    v, alias = lookup(b)
+    if alias:
+        fuzzy.append("%s -> %s" % (b, v["name"]))
     if not v:
         miss.append(b); out[b] = {"img": "", "rank": 0}; continue
     try:
@@ -57,5 +70,7 @@ json.dump(out, open("weapons.json", "w", encoding="utf-8"), ensure_ascii=False)
 total = sum(len(x["img"]) for x in out.values())
 print("weapon bases:", len(bases), "| matched:", sum(1 for x in out.values() if x["img"]))
 print("approx img total: %.2f MB" % (total/1024/1024))
-open("wmiss.txt", "w", encoding="utf-8").write("MISSING (%d):\n" % len(miss) + "\n".join(miss))
-print("missing count:", len(miss))
+open("wmiss.txt", "w", encoding="utf-8").write(
+    "MISSING (%d):\n" % len(miss) + "\n".join(miss)
+    + "\n\nFUZZY (%d):\n" % len(fuzzy) + "\n".join(fuzzy))
+print("missing count:", len(miss), "| fuzzy-matched:", len(fuzzy))
