@@ -26,6 +26,14 @@ id2en = {cid: v.get("name", "") for cid, v in en_items.items()}
 
 ours = json.load(open("data.json", encoding="utf-8"))
 
+# 표에는 올라왔지만 ambr API에 아직 없는 미출시 캐릭터의 원소 (수동 보정).
+# API에 추가되면 API 값이 우선하므로 이 항목은 그때 지우면 됨.
+MANUAL_EL = {
+    "알료샤": "Electric",
+    "오데트": "Ice",
+}
+
+
 def el_from_name(n):
     if "불" in n: return "Fire"
     if "물" in n: return "Water"
@@ -84,7 +92,7 @@ for i, c in enumerate(ours):
     else:
         # 표에는 있으나 API에 아직 없는 미출시 캐릭터.
         # 여행자로 대체하면 잘못된 초상화 + 영문 검색 오염이 생기므로 플레이스홀더 사용.
-        unknown.append(name); el = ""; en = ""
+        unknown.append(name); el = MANUAL_EL.get(name, ""); en = ""
     try:
         webp = to_webp(fetch_png(icon)) if icon else placeholder_webp()
         uri = "data:image/webp;base64," + base64.b64encode(webp).decode()
