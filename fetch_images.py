@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json, os, base64, io, time, urllib.request
-from PIL import Image
+from PIL import Image, ImageDraw
 
 os.makedirs("icons", exist_ok=True)
 UA = {"User-Agent": "Mozilla/5.0"}
@@ -46,6 +46,19 @@ def fetch_png(icon):
     open(path, "wb").write(data)
     return data
 
+def placeholder_webp(size=96, q=82):
+    """API에 아직 없는 미출시 캐릭터용 중립 실루엣 (여행자 아이콘 오용 방지)."""
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    s = size / 96.0
+    d.ellipse([0, 0, size - 1, size - 1], fill=(150, 143, 128, 60))
+    d.ellipse([34 * s, 22 * s, 62 * s, 50 * s], fill=(150, 143, 128, 165))
+    d.ellipse([20 * s, 56 * s, 76 * s, 104 * s], fill=(150, 143, 128, 165))
+    buf = io.BytesIO()
+    im.save(buf, format="WEBP", quality=q, method=6)
+    return buf.getvalue()
+
+
 def to_webp(png_bytes, size=96, q=82):
     im = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
     im = im.resize((size, size), Image.LANCZOS)
@@ -56,18 +69,24 @@ def to_webp(png_bytes, size=96, q=82):
 
 out = {}
 fails = []
+unknown = []
 for i, c in enumerate(ours):
     name = c["name"]
     v = byname.get(name) or byname_n.get(name.replace(" ", ""))
     cid = name2id.get(name) or name2id_n.get(name.replace(" ", ""))
     en = id2en.get(cid, "") if cid else ""
+    icon = None
     if v:
         icon = v["icon"]; el = v.get("element", "")
-    else:
+    elif "여행자" in name:
+        # 원소별 여행자는 API에 개별 항목이 없음 — 여행자 아이콘 + 이름에서 원소 추론
         icon = "UI_AvatarIcon_PlayerGirl"; el = el_from_name(name); en = "Traveler"
+    else:
+        # 표에는 있으나 API에 아직 없는 미출시 캐릭터.
+        # 여행자로 대체하면 잘못된 초상화 + 영문 검색 오염이 생기므로 플레이스홀더 사용.
+        unknown.append(name); el = ""; en = ""
     try:
-        png = fetch_png(icon)
-        webp = to_webp(png)
+        webp = to_webp(fetch_png(icon)) if icon else placeholder_webp()
         uri = "data:image/webp;base64," + base64.b64encode(webp).decode()
         out[name] = {"img": uri, "el": el, "en": en}
     except Exception as e:
@@ -82,6 +101,8 @@ print("done. entries:", len(out), "| with img:", sum(1 for v in out.values() if 
 print("with en:", sum(1 for v in out.values() if v.get("en")))
 print("approx base64 chars total:", total, "(~%.1f MB)" % (total/1024/1024))
 print("fails:", len(fails), fails[:5])
+print("unknown (API 미등재 -> 플레이스홀더):", len(unknown),
+      [n.encode("ascii", "replace").decode() for n in unknown])
 
 # --- Paimon CI icon (official Genshin favicon) ---
 paimon_sources = [
